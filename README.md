@@ -1,10 +1,12 @@
-# PlutoGrid
+# JHPlutoGrid
+
+Forked from `PlutoGrid.jl`.
 
 A viewer for tabular data in Pluto. Input can be any Tables.jl compatible table.
 
 Compared to the standard Pluto table view, this viewer includes sorting and filtering options in the table GUI as well as (optional) pagination.
 
-This viewer is based on [AG-Grid](https://www.ag-grid.com/) [Community Edition](https://github.com/ag-grid/ag-grid).
+This viewer is based on [AG-Grid](https://www.ag-grid.com/) Enterprise Edition<!-- [Community Edition](https://github.com/ag-grid/ag-grid). -->
 
 ## Usage
 
