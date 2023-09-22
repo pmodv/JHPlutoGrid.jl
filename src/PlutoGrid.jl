@@ -9,7 +9,9 @@ export readonly_table, editable_table, create_dataframe
 const MODIFIED_COL_INDICATOR = "modified_column_"
 const MODIFIED_COL_REGEX = r"^(?!modified_column_).+"
 
-const AG_GRID_VERSION = "28.2.1"
+const AG_GRID_VERSION = "30.1.0"
+
+agGrid.LicenseManager.setLicenseKey("");
 
 """
 	readonly_table(df; sortable=true, filterable=true, pagination=false)
@@ -68,7 +70,7 @@ editable_table(df; kwargs...) = editable_table(DataFrame(df); kwargs...)
 
 
 function _create_table(column_defs:: AbstractVector{<: AbstractDict}, data:: AbstractVector; 
-	sortable=true, filterable=true, resizable=true, pagination=false, height:: Integer=600,
+	sortable=true, enableRowGroup=true, enableRangeSelection=true,filterable=true, resizable=true, pagination=false, height:: Integer=600,
 	editable=false, insert=true, delete=true, auto_confirm=false)
 
 	edit_button = @htl("""
@@ -88,6 +90,14 @@ function _create_table(column_defs:: AbstractVector{<: AbstractDict}, data:: Abs
 		})
 	""")
 
+	export_button = @htl("""
+	<button 
+		id="export_to_excel"
+		type="button">
+	  	Export Table to Excel
+	  </button>
+	  """)
+
 	insert_button = @htl("""
 		<button  
 		id="insert_row"
@@ -95,6 +105,14 @@ function _create_table(column_defs:: AbstractVector{<: AbstractDict}, data:: Abs
 			Insert Row  
 		</button>
 	""")
+
+	# export to excel callback for button
+	export_excel_callback = JavaScript("""
+	div.querySelector("button#export_to_excel").addEventListener("click", (e) => {
+		gridOptions.api.exportDataAsExcel();
+	})
+	""")
+
 
 	insert_new_row_callback = JavaScript("""
 	div.querySelector("button#insert_row").addEventListener("click", (e) => {
@@ -166,10 +184,11 @@ function _create_table(column_defs:: AbstractVector{<: AbstractDict}, data:: Abs
 	return @htl("""
 <div id="myGrid" style="height: $(height)px;" class="ag-theme-alpine">
 $(editable ? edit_button : "")
+$(export_button)
 $((editable && insert) ? insert_button : "")
 $((editable && delete) ? delete_button : "")
 
-<script src="https://unpkg.com/ag-grid-community@$(AG_GRID_VERSION)/dist/ag-grid-community.min.js"></script>
+<script src="https://unpkg.com/ag-grid-enterprise$(AG_GRID_VERSION)/dist/ag-grid-enterprise.min.js"></script>
 <script>
 
 function numberParser(params) {
@@ -186,18 +205,22 @@ const rowData = $(_transfer_data(data));
 $checkbox_renderer
 
 $(editable ? edit_button_callbacks : JavaScript(""))
+$(export_excel_callback)
 $((editable && insert) ? insert_new_row_callback : JavaScript(""))
 $((editable && delete) ? delete_row_callback : JavaScript(""))
 
+# fixed filter/sortable order - added range select
 // let the grid know which columns and what data to use
 const gridOptions = {
   columnDefs: columnDefs,
   rowData: rowData,
   components: { checkboxRenderer: CheckboxRenderer },
   defaultColDef: {
-    filter: $(sortable),
-    sortable: $(filterable),
+    filter: $(filterable),
+    sortable: $(sortable),
 	resizable: $(resizable),
+	enableRowGroup: $(enableRowGroup),
+	enableRangeSelection: $(enableRangeSelection)
 	cellStyle: params => {
 		// source: https://stackoverflow.com/questions/65273946/ag-grid-highlight-cell-logic-not-working-properly
       if (
